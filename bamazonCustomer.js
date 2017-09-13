@@ -6,8 +6,8 @@ var connection = mysql.createConnection({
   port: 3306,
 
   user: "User",
+
   password: "password",
-  
   database: "bamazon"
 });
 
@@ -20,7 +20,7 @@ function readProducts() {
   console.log("Selecting all products...\n");
   connection.query("SELECT * FROM products", function(err, res) {
     if (err) throw err;
-
+    // Log all results of the SELECT statement
     console.log(res);
     buyMenu(res);
   });
@@ -38,7 +38,7 @@ function buyMenu(inventory) {
   ])  
   .then(function(val) {
     var buyerChoice = parseInt(val.choice);
-    var product = choiceId, inventory;
+    var product = itemCheck(buyerChoice, inventory);
 
     if (product) {
       quantityChoice(product);
@@ -52,7 +52,7 @@ function buyMenu(inventory) {
 
 function quantityChoice(product) {
   inquirer
-  .prompt([
+  .prompt( [
     {
       name: "quantity",
       type: "input",
@@ -60,9 +60,10 @@ function quantityChoice(product) {
     }
   ])
   .then(function(val) {
+    
     var quantity = parseInt(val.quantity);
-    if (quantity> product.stock.quantity); {
-      console.log("/nNot enough, make another selection");
+    if (quantity > product.item_quantity) {
+      console.log("\nNot enough, make another selection");
       readProducts();
     }
     else {
@@ -73,11 +74,20 @@ function quantityChoice(product) {
 
 function buyTheStuff(product, quantity) {
   connection.query(
-    "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?",
+    "UPDATE products SET item_quantity = item_quantity - ? WHERE item_id = ?",
     [quantity, product.item_id],
     function(err, res) {
       console.log("\nYou bought " + quantity + " " + product.product_name);
       readProducts();
     }
   );
+}
+
+function itemCheck(buyerChoice, inventory) {
+  for (var i = 0; i < inventory.length; i++) {
+    if (inventory[i].item_id === buyerChoice) {
+      return inventory[i];
+    }
+  }
+  return null;
 }
