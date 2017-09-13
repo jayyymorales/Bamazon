@@ -5,12 +5,10 @@ var connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
 
-  // Your username
   user: "User",
-
-  // Your password
   password: "password",
-  database: "top_songsDB"
+  
+  database: "bamazon"
 });
 
 connection.connect(function(err) {
@@ -22,117 +20,64 @@ function readProducts() {
   console.log("Selecting all products...\n");
   connection.query("SELECT * FROM products", function(err, res) {
     if (err) throw err;
-    // Log all results of the SELECT statement
+
     console.log(res);
-    buyMenu();
+    buyMenu(res);
   });
 }
 
 
-function buyMenu() {
+function buyMenu(inventory) {
   inquirer
-    .prompt({
-      name: "action",
-      type: "rawlist",
-      message: "What would you like to do?",
-      choices: [
-        "Find songs by artist",
-        "Find all artists who appear more than once",
-        "Find data within a specific range",
-        "Search for a specific song",
-        "Find artists with a top song and top album in the same year"
-      ]
-    })
-    .then(function(answer) {
-      switch (answer.action) {
-        case "Find songs by artist":
-          artistSearch();
-          break;
+    .prompt([
+      {
+      name: "choice",
+      type: "input",
+      message: "What product would you like to buy? Please enter ID",
+    }
+  ])  
+  .then(function(val) {
+    var buyerChoice = parseInt(val.choice);
+    var product = choiceId, inventory;
 
-        case "Find all artists who appear more than once":
-          multiSearch();
-          break;
-
-        case "Find data within a specific range":
-          rangeSearch();
-          break;
-
-        case "Search for a specific song":
-          songSearch();
-          break;
-
-        case "Find artists with a top song and top album in the same year":
-          songAndAlbumSearch();
-          break;
-      }
-    });
+    if (product) {
+      quantityChoice(product);
+    }
+    else {
+      console.log("\nInvalid selection. Please select a listed product");
+      readProducts();
+    }
+  });
 }
 
-function createProduct() {
-    console.log("Inserting a new product...\n");
-    var query = connection.query(
-      "INSERT INTO products SET ?",
-      {
-        flavor: "Rocky Road",
-        price: 3.0,
-        quantity: 50
-      },
-      function(err, res) {
-        console.log(res.affectedRows + " product inserted!\n");
-        // Call updateProduct AFTER the INSERT completes
-        updateProduct();
-      }
-    );
-  
-    // logs the actual query being run
-    console.log(query.sql);
-  }
-  
-  function updateProduct() {
-    console.log("Updating all Rocky Road quantities...\n");
-    var query = connection.query(
-      "UPDATE products SET ? WHERE ?",
-      [
-        {
-          price: 50
-        },
-        {
-          flavor: "Rocky Road"
-        }
-      ],
-      function(err, res) {
-        console.log(res.affectedRows + " products updated!\n");
-        // Call deleteProduct AFTER the UPDATE completes
-        deleteProduct();
-      }
-    );
-  
-    // logs the actual query being run
-    console.log(query.sql);
-  }
-  
-  function deleteProduct() {
-    console.log("Deleting all strawberry icecream...\n");
-    connection.query(
-      "DELETE FROM products WHERE ?",
-      {
-        flavor: "strawberry"
-      },
-      function(err, res) {
-        console.log(res.affectedRows + " products deleted!\n");
-        // Call readProducts AFTER the DELETE completes
-        readProducts();
-      }
-    );
-  }
-  
-  function readProducts() {
-    console.log("Selecting all products...\n");
-    connection.query("SELECT * FROM products", function(err, res) {
-      if (err) throw err;
-      // Log all results of the SELECT statement
-      console.log(res);
-      connection.end();
-    });
-  }
-  
+function quantityChoice(product) {
+  inquirer
+  .prompt([
+    {
+      name: "quantity",
+      type: "input",
+      message: "How many would you like to purchase?"
+    }
+  ])
+  .then(function(val) {
+    var quantity = parseInt(val.quantity);
+    if (quantity> product.stock.quantity); {
+      console.log("/nNot enough, make another selection");
+      readProducts();
+    }
+    else {
+      buyTheStuff(product, quantity);
+    }
+  });
+}
+
+function buyTheStuff(product, quantity) {
+  connection.query(
+    "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?",
+    [quantity, product.item_id],
+    function(err, res) {
+      console.log("\nYou bought " + quantity + " " + product.product_name);
+      readProducts();
+    }
+  );
+}
